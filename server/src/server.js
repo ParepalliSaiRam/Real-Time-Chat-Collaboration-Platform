@@ -1,20 +1,9 @@
+import http from "http";
 import app from "./app.js";
-import prisma from "./config/prisma.js";
+import { initializeSocket } from "./sockets/index.js";
 
-const PORT = process.env.PORT || 5000;
+const server = http.createServer(app);
 
-async function startServer() {
-  try {
-    await prisma.$connect();
-    console.log("✅ Connected to PostgreSQL");
+initializeSocket(server);
 
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error("Failed to connect to database:", error);
-    process.exit(1);
-  }
-}
-
-startServer();
+server.listen(process.env.PORT);
