@@ -27,6 +27,8 @@ model User {
   messages Message[]
 
   messageReads MessageRead[]
+
+  groupConversations Conversation[] @relation("GroupCreator")
 }
 
 model FriendRequest {
@@ -67,18 +69,24 @@ enum FriendRequestStatus {
 }
 
 model Conversation {
-  id            String   @id @default(cuid())
 
-  isGroup       Boolean  @default(false)
-  name          String?
+  id String @id @default(cuid())
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  isGroup Boolean @default(false)
+
+  name String?
+
+  createdById String?
+
+  createdBy User? @relation("GroupCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   lastMessageAt DateTime @default(now())
 
-  participants  ConversationParticipant[]
-  messages      Message[]
+  participants ConversationParticipant[]
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
 }
 
 model ConversationParticipant {
@@ -87,11 +95,12 @@ model ConversationParticipant {
 
   conversationId String
   userId String
-
+  
   conversation Conversation @relation(fields:[conversationId], references:[id], onDelete:Cascade)
 
   user User @relation(fields:[userId], references:[id], onDelete:Cascade)
-
+  
+  isAdmin Boolean @default(false)
   joinedAt DateTime @default(now())
 
   @@unique([conversationId, userId])
@@ -104,9 +113,12 @@ model Message {
   conversationId String
   senderId String
 
-  content String
+  type MessageType @default(TEXT)
+
+  content String?
 
   isEdited Boolean @default(false)
+  isDeleted Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -114,6 +126,8 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  attachment Attachment?
 
   reads MessageRead[]
 }
@@ -133,4 +147,27 @@ model MessageRead {
 
   @@unique([messageId, userId])
 
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+model Attachment {
+
+  id String @id @default(cuid())
+
+  messageId String @unique
+
+  fileName String
+
+  mimeType String
+
+  size Int
+
+  url String
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 }
